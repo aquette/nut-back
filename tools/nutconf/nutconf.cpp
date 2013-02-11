@@ -67,6 +67,8 @@ const char * Usage::s_text[] = {
 "    --set-notifymsg <type> <message>    Configures notification message for the type",
 "    --set-notifycmd <command>           Configures notification command",
 "    --set-shutdowncmd <command>         Configures shutdown command",
+"    --set-minsupplies <supp_no>         Configures minimum of required power supplies",
+"    --set-powerdownflag <file>          Configured powerdown flag file",
 "    --set-user <spec>                   Configures one user (see below)",
 "                                        All existing users are removed; however, it may be",
 "                                        specified multiple times to set multiple users",
@@ -1048,6 +1050,12 @@ class NutConfOptions: public Options {
 	/** Shutdown command */
 	std::string shutdown_cmd;
 
+	/** Min. supplies */
+	std::string min_supplies;
+
+	/** Powerdown flag */
+	std::string powerdown_flag;
+
 	/** Users specifications */
 	UserSpecs users;
 
@@ -1432,6 +1440,38 @@ NutConfOptions::NutConfOptions(char * const argv[], int argc):
 
 			else
 				shutdown_cmd = args.front();
+		}
+		else if ("set-minsupplies" == *opt) {
+			Arguments args;
+
+			if (!min_supplies.empty())
+				m_errors.push_back("--set-minsupplies option specified more than once");
+
+			else if (NutConfOptions::SETTER != optMode("set-minsupplies", args))
+				m_errors.push_back("--set-minsupplies option requires an argument");
+
+			else if (args.size() > 1) {
+				m_errors.push_back("Too many arguments for the --set-minsupplies option");
+			}
+
+			else
+				min_supplies = args.front();
+		}
+		else if ("set-powerdownflag" == *opt) {
+			Arguments args;
+
+			if (!powerdown_flag.empty())
+				m_errors.push_back("--set-powerdownflag option specified more than once");
+
+			else if (NutConfOptions::SETTER != optMode("set-powerdownflag", args))
+				m_errors.push_back("--set-powerdownflag option requires an argument");
+
+			else if (args.size() > 1) {
+				m_errors.push_back("Too many arguments for the --set-powerdownflag option");
+			}
+
+			else
+				powerdown_flag = args.front();
 		}
 		else if ("set-user" == *opt || "add-user" == *opt) {
 			size_t * cnt = ('s' == (*opt)[0] ? &set_user_cnt : &add_user_cnt);
@@ -2309,6 +2349,60 @@ void setShutdownCmd(const std::string & cmd, const std::string & etc)
 
 
 /**
+ *  \brief  Set minimum of power supplies in upsmon.conf
+ *
+ *  \param  min_supplies  Minimum of power supplies
+ *  \param  etc           Configuration directory
+ */
+void setMinSupplies(const std::string & min_supplies, const std::string & etc) {
+	std::string upsmon_conf_file(etc + "/upsmon.conf");
+
+	nut::UpsmonConfiguration upsmon_conf;
+
+	// Source previous configuration (if any)
+	source(&upsmon_conf, upsmon_conf_file);
+
+	unsigned int min;
+
+	std::stringstream ss(min_supplies);
+
+	if ((ss >> min).fail()) {
+		std::cerr
+		<< "Error: invalid min. power supplies specification: \""
+		<< min_supplies << '"' << std::endl;
+
+		::exit(1);
+	}
+
+	upsmon_conf.minSupplies = min;
+
+	// Store configuration
+	store(&upsmon_conf, upsmon_conf_file);
+}
+
+
+/**
+ *  \brief  Set powerdown flag file in upsmon.conf
+ *
+ *  \param  powerdown_flag  Powerdown flag file
+ *  \param  etc             Configuration directory
+ */
+void setPowerdownFlag(const std::string & powerdown_flag, const std::string & etc) {
+	std::string upsmon_conf_file(etc + "/upsmon.conf");
+
+	nut::UpsmonConfiguration upsmon_conf;
+
+	// Source previous configuration (if any)
+	source(&upsmon_conf, upsmon_conf_file);
+
+	upsmon_conf.powerDownFlag = powerdown_flag;
+
+	// Store configuration
+	store(&upsmon_conf, upsmon_conf_file);
+}
+
+
+/**
  *  \brief  Set users in upsd.users
  *
  *  \param  users    User list
@@ -2964,6 +3058,16 @@ int mainx(int argc, char * const argv[]) {
 	// Shutdown command was set
 	if (!options.shutdown_cmd.empty()) {
 		setShutdownCmd(options.shutdown_cmd, etc);
+	}
+
+	// Min. of power supplies was set
+	if (!options.min_supplies.empty()) {
+		setMinSupplies(options.min_supplies, etc);
+	}
+
+	// Powerdown flag file was set
+	if (!options.powerdown_flag.empty()) {
+		setPowerdownFlag(options.powerdown_flag, etc);
 	}
 
 	// Users were set

@@ -118,6 +118,12 @@ Sets command used for notifications.
 *--set-shutdowncmd* '<command>'::
 Sets command used to shut the system down.
 
+*--set-minsupplies* '<supp_no>'::
+Configures minimum of required power supplies.
+
+*--set-powerdownflag* '<file>'::
+Configures powerdown flag file.
+
 *--set-user* | *--add-user* '<arguments>'::
 Sets/adds NUT user.
 
