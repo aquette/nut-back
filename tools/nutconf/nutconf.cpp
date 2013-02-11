@@ -65,6 +65,7 @@ const char * Usage::s_text[] = {
 "                                        Existing flags are replaced",
 "    --add-notifyflags <type> <flag>+    Same as --set-notifyflags, but keeps existing flags",
 "    --set-notifymsg <type> <message>    Configures notification message for the type",
+"    --set-notifycmd <command>           Configures notification command",
 "    --set-shutdowncmd <command>         Configures shutdown command",
 "    --set-user <spec>                   Configures one user (see below)",
 "                                        All existing users are removed; however, it may be",
@@ -1041,6 +1042,9 @@ class NutConfOptions: public Options {
 	/** Set notify message options count */
 	size_t set_notify_msg_cnt;
 
+	/** Notify command */
+	std::string notify_cmd;
+
 	/** Shutdown command */
 	std::string shutdown_cmd;
 
@@ -1394,6 +1398,23 @@ NutConfOptions::NutConfOptions(char * const argv[], int argc):
 			}
 
 			++set_notify_msg_cnt;
+		}
+		else if ("set-notifycmd" == *opt) {
+			Arguments args;
+
+			if (!notify_cmd.empty())
+				m_errors.push_back("--set-notifycmd option specified more than once");
+
+			else if (NutConfOptions::SETTER != optMode("set-notifycmd", args))
+				m_errors.push_back("--set-notifycmd option requires an argument");
+
+			else if (args.size() > 1) {
+				m_errors.push_back("Too many arguments for the --set-notifycmd option");
+				m_errors.push_back("    (perhaps you need to quote the command?)");
+			}
+
+			else
+				notify_cmd = args.front();
 		}
 		else if ("set-shutdowncmd" == *opt) {
 			Arguments args;
@@ -2244,6 +2265,28 @@ void setNotifyMsgs(
 
 
 /**
+ *  \brief  Set notify command in upsmon.conf
+ *
+ *  \param  cmd  otify command
+ *  \param  etc  Configuration directory
+ */
+void setNotifyCmd(const std::string & cmd, const std::string & etc)
+{
+	std::string upsmon_conf_file(etc + "/upsmon.conf");
+
+	nut::UpsmonConfiguration upsmon_conf;
+
+	// Source previous configuration (if any)
+	source(&upsmon_conf, upsmon_conf_file);
+
+	upsmon_conf.notifyCmd = cmd;
+
+	// Store configuration
+	store(&upsmon_conf, upsmon_conf_file);
+}
+
+
+/**
  *  \brief  Set shutdown command in upsmon.conf
  *
  *  \param  cmd  Shutdown command
@@ -2911,6 +2954,11 @@ int mainx(int argc, char * const argv[]) {
 	// Notify messages were set
 	if (!options.notify_msgs.empty()) {
 		setNotifyMsgs(options.notify_msgs, etc);
+	}
+
+	// Notify command was set
+	if (!options.notify_cmd.empty()) {
+		setNotifyCmd(options.notify_cmd, etc);
 	}
 
 	// Shutdown command was set
