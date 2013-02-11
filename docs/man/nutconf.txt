@@ -112,6 +112,9 @@ Notification flags:
 *--set-notifymsg* '<type>' '<message>'::
 Sets message for the specified notification type.
 
+*--set-notifycmd* '<command>'::
+Sets command used for notifications.
+
 *--set-shutdowncmd* '<command>'::
 Sets command used to shut the system down.
 
