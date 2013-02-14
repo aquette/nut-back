@@ -68,7 +68,7 @@ const char * Usage::s_text[] = {
 "    --set-notifycmd <command>           Configures notification command",
 "    --set-shutdowncmd <command>         Configures shutdown command",
 "    --set-minsupplies <supp_no>         Configures minimum of required power supplies",
-"    --set-powerdownflag <file>          Configured powerdown flag file",
+"    --set-powerdownflag <file>          Configures powerdown flag file",
 "    --set-user <spec>                   Configures one user (see below)",
 "                                        All existing users are removed; however, it may be",
 "                                        specified multiple times to set multiple users",
